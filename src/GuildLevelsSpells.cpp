@@ -1,9 +1,8 @@
 /*
- * mod-guild-levels: the three perks you cast.
+ * mod-guild-levels: the two perks you cast.
  *
- * - Mobile Banking (90452): summons a guild chest (gameobject 9503400, a guild bank) for 5
+ * - Guild Vault (90452): summons a guild chest (gameobject 9503400, a guild bank) for 5
  *   minutes. The spell's own effect does the summoning; the script only checks for a guild.
- * - Have Group, Will Travel (90453): sends every party or raid member a summon to you.
  * - Mass Resurrection (90454): offers every dead party or raid member within 100 yards (them or
  *   their corpse) a resurrection, the same way Resurrection does. A player who accepts can't be
  *   raised by it again for GuildLevels.Perk.MassResurrectionMinutes.
@@ -89,9 +88,9 @@ namespace
     }
 }
 
-class spell_guild_levels_mobile_banking : public SpellScript
+class spell_guild_levels_guild_vault : public SpellScript
 {
-    PrepareSpellScript(spell_guild_levels_mobile_banking);
+    PrepareSpellScript(spell_guild_levels_guild_vault);
 
     SpellCastResult CheckCast()
     {
@@ -104,56 +103,7 @@ class spell_guild_levels_mobile_banking : public SpellScript
 
     void Register() override
     {
-        OnCheckCast += SpellCheckCastFn(spell_guild_levels_mobile_banking::CheckCast);
-    }
-};
-
-class spell_guild_levels_have_group : public SpellScript
-{
-    PrepareSpellScript(spell_guild_levels_have_group);
-
-    SpellCastResult CheckCast()
-    {
-        Player* caster = GetCaster()->ToPlayer();
-        if (!caster || !caster->GetGroup())
-            return SPELL_FAILED_TARGET_NOT_IN_PARTY;
-        if (caster->GetMap()->Instanceable())
-            return SPELL_FAILED_NOT_HERE;
-        return SPELL_CAST_OK;
-    }
-
-    void HandleDummy(SpellEffIndex /*effIndex*/)
-    {
-        Player* caster = GetCaster()->ToPlayer();
-        if (!caster)
-            return;
-
-        uint32 sent = 0;
-        ForEachOtherMember(caster, [caster, &sent](Player* member)
-        {
-            // The member may be on another map, updated by another thread: plain field reads only.
-            if (!member->IsAlive() || member->IsInCombat() || member->IsBeingTeleported() || member->IsInFlight())
-                return;
-            if (member->InBattleground())
-                return;
-
-            member->SetSummonPoint(caster->GetMapId(), caster->GetPositionX(), caster->GetPositionY(), caster->GetPositionZ());
-
-            WorldPacket data(SMSG_SUMMON_REQUEST, 8 + 4 + 4);
-            data << caster->GetGUID();
-            data << uint32(caster->GetZoneId());
-            data << uint32(MAX_PLAYER_SUMMON_DELAY * IN_MILLISECONDS);
-            member->SendDirectMessage(&data);
-            ++sent;
-        });
-
-        ChatHandler(caster->GetSession()).PSendSysMessage("Have Group, Will Travel: summoning {} group member{}.", sent, sent == 1 ? "" : "s");
-    }
-
-    void Register() override
-    {
-        OnCheckCast += SpellCheckCastFn(spell_guild_levels_have_group::CheckCast);
-        OnEffectHitTarget += SpellEffectFn(spell_guild_levels_have_group::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
+        OnCheckCast += SpellCheckCastFn(spell_guild_levels_guild_vault::CheckCast);
     }
 };
 
@@ -230,7 +180,6 @@ namespace GuildLevels
 
 void AddGuildLevelsSpellScripts()
 {
-    RegisterSpellScript(spell_guild_levels_mobile_banking);
-    RegisterSpellScript(spell_guild_levels_have_group);
+    RegisterSpellScript(spell_guild_levels_guild_vault);
     RegisterSpellScript(spell_guild_levels_mass_resurrection);
 }
