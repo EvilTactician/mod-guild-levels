@@ -1,10 +1,10 @@
-# mod-guild-levels 2.0.0
+# mod-guild-levels 2.0.1
 
 <div align="center">
 
 ![Interface Version](https://img.shields.io/badge/Interface-30300-blue)
 ![WoW Version](https://img.shields.io/badge/WoW-3.3.5a-orange)
-[![Version](https://img.shields.io/badge/Version-2.0.0-green)](https://github.com/EvilTactician/mod-guild-levels)
+[![Version](https://img.shields.io/badge/Version-2.0.1-green)](https://github.com/EvilTactician/mod-guild-levels)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
 </div>
@@ -57,7 +57,10 @@ level 20.
 count toward the size of a guild group, so one player with four guild bots is a full guild group.
 A guild with no real player in it never earns anything, so bot-run guilds stay at level 1.
 `GuildLevels.XP.BotGuildsEarn = 1` lets bots earn guild XP too: guild bots' quests and tabard kills
-count for your guild, and random bots' own guilds level up as well.
+count for your guild, and random bots' own guilds level up as well. For your own bots only, use
+`GuildLevels.XP.BotsEarnWithGuildmate = 1` instead: a bot then earns while it is grouped with a real
+player of its guild, and the bots of a guild group are credited for its bosses, so they show in
+the contribution list. Bot-only guilds still never earn.
 
 A member's contribution is kept per week (weeks start on Tuesday) and in total, and is reset when
 they leave the guild.

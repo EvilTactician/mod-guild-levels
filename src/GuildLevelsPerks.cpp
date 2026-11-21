@@ -205,7 +205,9 @@ namespace GuildLevels
         uint32 guildId = player->GetGuildId();
         uint8 level = GetLevel(guildId);
         bool changed = !data->known || data->guildId != guildId || data->level != level;
-        if (!changed && !force)
+        // Nothing to keep below the first perk's level: most players and bots (no guild, or a
+        // guild that never levels) stop here.
+        if (!changed && (!force || level < PERK_GOOD_STANDING_1))
             return;
 
         Config const& cfg = GetConfig();

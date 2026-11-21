@@ -61,6 +61,14 @@ GuildLevels.Announce = 1
 #                     level up.
 #        Default:     0
 #
+#    GuildLevels.XP.BotsEarnWithGuildmate
+#        Description: With GuildLevels.XP.BotGuildsEarn off: 1 lets a bot earn guild XP for its
+#                     quests and tabard kills while it is grouped with a real player of its own
+#                     guild, and credits the bots of a guild group for its bosses, so they show
+#                     in the guild's contribution list. Bot-only guilds still never earn. A boss's
+#                     guild XP is the same either way; it is only shared out among more members.
+#        Default:     0
+#
 #    GuildLevels.XP.TabardKill
 #        Description: Guild XP for each creature kill that rewards a living member wearing the
 #                     stock Guild Tabard (5976). A flat amount: no realm rate changes it, and it
@@ -77,6 +85,7 @@ GuildLevels.XP.RaidGuildMembers = 10
 GuildLevels.XP.DailyCap = 150000
 GuildLevels.XP.DailyCapUntilLevel = 20
 GuildLevels.XP.BotGuildsEarn = 0
+GuildLevels.XP.BotsEarnWithGuildmate = 0
 GuildLevels.XP.TabardKill = 10
 
 #

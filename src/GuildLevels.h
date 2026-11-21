@@ -88,6 +88,7 @@ namespace GuildLevels
         uint8 dailyCapUntilLevel = 20;  // the cap stops applying once the guild reaches this level
         uint32 raidGuildMembers = 10;   // raid kills: guild members needed (at most 80% of the raid)
         bool botGuildsEarn = false;     // guilds without a real player never earn XP when false
+        bool botsEarnWithGuildmate = false; // bots earn while grouped with a real player of their guild
         uint32 tabardKillXP = 10;       // flat guild XP per kill in a guild tabard, 0 = off
 
         // Perks (percent unless noted); rank 1 / rank 2

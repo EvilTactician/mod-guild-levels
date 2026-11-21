@@ -144,6 +144,7 @@ namespace GuildLevels
         c.dailyCapUntilLevel = uint8(std::min<uint32>(MAX_LEVEL, sConfigMgr->GetOption<uint32>("GuildLevels.XP.DailyCapUntilLevel", 20)));
         c.raidGuildMembers = std::max<uint32>(1, sConfigMgr->GetOption<uint32>("GuildLevels.XP.RaidGuildMembers", 10));
         c.botGuildsEarn = sConfigMgr->GetOption<bool>("GuildLevels.XP.BotGuildsEarn", false);
+        c.botsEarnWithGuildmate = sConfigMgr->GetOption<bool>("GuildLevels.XP.BotsEarnWithGuildmate", false);
         c.tabardKillXP = sConfigMgr->GetOption<uint32>("GuildLevels.XP.TabardKill", 10);
 
         auto pct = [](char const* key, uint32 def) { return std::min<uint32>(1000, sConfigMgr->GetOption<uint32>(key, def)); };
