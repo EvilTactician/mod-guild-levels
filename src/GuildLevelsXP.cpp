@@ -10,17 +10,17 @@
  *   80% of the raid. Bosses that are gray to the highest-level member give nothing. A boss is
  *   an encounter of the instance (DungeonEncounter.dbc), paid when the core credits it, once
  *   per instance: a council of several creatures pays once.
- * - Kills in a guild tabard: GuildLevels.XP.TabardKill, and GuildLevels.Rep.TabardKill guild rep,
- *   for each creature kill that rewards a living member wearing one. Flat amounts that no realm
- *   rate touches.
+ * - Kills in the stock Guild Tabard: GuildLevels.XP.TabardKill for each creature kill that
+ *   rewards a living member wearing it. A flat amount that no realm rate touches.
  *
- * Each real player also earns guild rep (GuildLevelsRep.cpp) from the guild XP they bring in:
- * their quest's share, and the whole of a boss's guild XP for everyone in the guild group. Tabard
- * kills pay their own rep instead.
+ * Loyal Following adds its bonus to all of these in AddXP (GuildLevelsMgr.cpp).
  *
  * Only real players earn guild XP. Bots that are members of the guild count toward the size of
  * a guild group, so one player with four guild bots is a full guild group, but a guild with no
- * real player present never earns anything (unless GuildLevels.XP.BotGuildsEarn).
+ * real player present never earns anything (unless GuildLevels.XP.BotGuildsEarn). With
+ * GuildLevels.XP.BotsEarnWithGuildmate, a bot earns too while grouped with a real player of its
+ * own guild, and the bots of a guild group are credited for its bosses: bot-only guilds still
+ * never earn.
  *
  * Released under the MIT License.
  */
@@ -28,6 +28,8 @@
 #include "GuildLevels.h"
 #include "Creature.h"
 #include "Formulas.h"
+#include "Group.h"
+#include "Item.h"
 #include "GameTime.h"
 #include "KillRewarder.h"
 #include "ObjectMgr.h"
@@ -66,7 +68,7 @@ namespace
         uint32 members = 0;                             // guild members on the boss's map, bots too
         uint8 highestLevel = 0;
         std::vector<ObjectGuid::LowType> realPlayers;   // who gets the credit
-        std::vector<Player*> realPlayerObjects;         // and the rep: same map, so this thread
+        std::vector<ObjectGuid::LowType> bots;          // credited too when bots may earn
     };
 
     // Guild XP percentage for a guild group of `members` guild members out of `groupSize`.
@@ -110,10 +112,9 @@ namespace
             ++p.members;
             p.highestLevel = std::max(p.highestLevel, member->GetLevel());
             if (IsRealPlayer(member))
-            {
                 p.realPlayers.push_back(member->GetGUID().GetCounter());
-                p.realPlayerObjects.push_back(member);
-            }
+            else
+                p.bots.push_back(member->GetGUID().GetCounter());
         }
 
         auto best = std::max_element(presence.begin(), presence.end(),
@@ -138,9 +139,41 @@ namespace
             xp *= GetConfig().heroicBonus;
         xp = xp * percent / 100.0;
 
-        AddXP(best->first, uint64(xp), p.realPlayers);
-        for (Player* member : p.realPlayerObjects)
-            GainGuildRep(member, uint64(xp));
+        std::vector<ObjectGuid::LowType> credited = p.realPlayers;
+        if (GetConfig().botGuildsEarn || (GetConfig().botsEarnWithGuildmate && !p.realPlayers.empty()))
+            credited.insert(credited.end(), p.bots.begin(), p.bots.end());
+        AddXP(best->first, uint64(xp), credited);
+    }
+
+    // A bot grouped with a real player of its own guild. Group members on other maps are only
+    // read (guild id, session), as the spells do.
+    bool WithRealGuildmate(Player* bot)
+    {
+        Group* group = bot->GetGroup();
+        if (!group)
+            return false;
+        for (GroupReference* itr = group->GetFirstMember(); itr; itr = itr->next())
+            if (Player* member = itr->GetSource())
+                if (member != bot && member->GetGuildId() == bot->GetGuildId() && IsRealPlayer(member))
+                    return true;
+        return false;
+    }
+
+    // Quests and tabard kills: real players, and bots when the config lets them.
+    bool CanEarn(Player* player)
+    {
+        if (IsRealPlayer(player) || GetConfig().botGuildsEarn)
+            return true;
+        return GetConfig().botsEarnWithGuildmate && WithRealGuildmate(player);
+    }
+}
+
+namespace GuildLevels
+{
+    bool WearsGuildTabard(Player* player)
+    {
+        Item* tabard = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_TABARD);
+        return tabard && tabard->GetEntry() == ITEM_GUILD_TABARD;
     }
 }
 
@@ -169,12 +202,11 @@ public:
             return;
         if (!GetConfig().enabled || !player->GetGuildId())
             return;
-        if (!IsRealPlayer(player) && !GetConfig().botGuildsEarn)
+        if (!CanEarn(player))
             return;
 
         uint64 xp = uint64(double(xpValue) * GetConfig().questShare);
         AddXP(player->GetGuildId(), xp, { player->GetGUID().GetCounter() });
-        GainGuildRep(player, xp);
     }
 
     // Fires for everyone the kill rewards: whoever tagged the creature, or each of their group in
@@ -182,10 +214,9 @@ public:
     void OnPlayerRewardKillRewarder(Player* player, KillRewarder* rewarder, bool /*isDungeon*/, float& /*rate*/) override
     {
         uint32 xp = GetConfig().tabardKillXP;
-        uint32 rep = GetConfig().repTabardKill;
-        if ((!xp && !rep) || !GetConfig().enabled || !player->GetGuildId() || !player->IsAlive() || !WearsGuildTabard(player))
+        if (!xp || !GetConfig().enabled || !player->GetGuildId() || !player->IsAlive() || !WearsGuildTabard(player))
             return;
-        if (!IsRealPlayer(player) && !GetConfig().botGuildsEarn)
+        if (!CanEarn(player))
             return;
 
         Creature* victim = rewarder->GetVictim()->ToCreature();
@@ -195,7 +226,6 @@ public:
             return;
 
         AddXP(player->GetGuildId(), xp, { player->GetGUID().GetCounter() });
-        GainFlatGuildRep(player, rep);
     }
 };
 

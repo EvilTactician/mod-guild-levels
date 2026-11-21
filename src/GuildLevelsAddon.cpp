@@ -3,14 +3,9 @@
  * guild hooks that load, save and clean up.
  *
  * Addon wire format, both directions: an addon whisper to yourself, "GuildLevels\t<COMMAND>:...".
- *   client -> server  HELLO (perk list, rewards + state), STATE, ROSTER, NEWS, REWARDS
+ *   client -> server  HELLO (perk list + state), STATE, ROSTER, NEWS
  *   server -> client  S:<level>:<xp>:<xp needed>:<today's xp>:<daily cap>:<total xp>:<my week>:<my total>
- *                       :<guild Cash Flow this week>:<guild Cash Flow total>:<my Cash Flow this week> (copper)
- *                       :<my guild rep>:<my rep rank, 3 Neutral..7 Exalted>:<my rep this week>:<weekly cap>
- *                     V:<vendor creature entry>,...   the guild vendors
- *                     W:<item>,<team>,<guild level>,<rep rank>,<price>,<category>;... ... WEND
- *                       every guild reward; team 0 both, 1 Alliance, 2 Horde; price in copper before
- *                       the vendor's discount; category as RewardCategory in GuildLevels.h
+ *                       :<guild Tithe this week>:<guild Tithe total>:<my Tithe this week> (copper)
  *                     UP:<level>:<perk name>    the guild just reached that level
  *                     K:<level>:<name>:<description> ... KEND
  *                     R:<name>,<week xp>,<total xp>;... ... REND
@@ -47,7 +42,7 @@ namespace
     constexpr uint32 SAVE_INTERVAL_MS = 60 * IN_MILLISECONDS;
     constexpr Milliseconds REQUEST_COOLDOWN = 1s;
 
-    enum Request : uint8 { REQUEST_HELLO, REQUEST_STATE, REQUEST_ROSTER, REQUEST_NEWS, REQUEST_REWARDS, REQUEST_COUNT };
+    enum Request : uint8 { REQUEST_HELLO, REQUEST_STATE, REQUEST_ROSTER, REQUEST_NEWS, REQUEST_COUNT };
 
     // Addon requests per player, each kind at most once a second (the addon sends two kinds
     // back to back when its window opens). World thread only.
@@ -225,32 +220,15 @@ namespace GuildLevels
     void SendState(Player* player)
     {
         uint32 guildId = player->GetGuildId();
-        RepInfo rep = GetRepInfo(player);
-        uint32 cap = GetConfig().repEnabled ? WeeklyRepCap() : 0;
         if (!guildId || !GetConfig().enabled)
         {
-            SendAddon(player, Acore::StringFormat("S:0:0:0:0:0:0:0:0:0:0:0:0:3:0:{}", cap));
+            SendAddon(player, "S:0:0:0:0:0:0:0:0:0:0:0");
             return;
         }
         GuildState s = GetState(guildId);
         MemberStats me = GetMemberStats(player->GetGUID().GetCounter(), guildId);
-        SendAddon(player, Acore::StringFormat("S:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}", s.level, s.xp, XPForLevel(s.level),
-            s.dayXp, DailyCap(s.level), s.totalXp, me.weekXp, me.totalXp, s.cashWeekMoney, s.cashTotal, me.weekCash,
-            rep.standing, rep.rank, rep.weekRep, cap));
-    }
-
-    void SendRewards(Player* player)
-    {
-        std::string vendors;
-        for (uint32 entry : GetVendorEntries())
-            vendors += (vendors.empty() ? "" : ",") + std::to_string(entry);
-        SendAddon(player, "V:" + vendors);
-
-        std::vector<std::string> rows;
-        if (GetConfig().rewardsEnabled)
-            for (Reward const& r : GetRewards())
-                rows.push_back(Acore::StringFormat("{},{},{},{},{},{}", r.item, r.team, r.guildLevel, r.repRank, r.price, r.category));
-        SendRows(player, "W", rows, "WEND");
+        SendAddon(player, Acore::StringFormat("S:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}", s.level, s.xp, XPForLevel(s.level),
+            s.dayXp, DailyCap(s.level), s.totalXp, me.weekXp, me.totalXp, s.cashWeekMoney, s.cashTotal, me.weekCash));
     }
 }
 
@@ -280,7 +258,6 @@ public:
             if (!Throttled(player, REQUEST_HELLO))
             {
                 SendPerks(player);
-                SendRewards(player);
                 SendState(player);
             }
         }
@@ -298,11 +275,6 @@ public:
         {
             if (!Throttled(player, REQUEST_NEWS))
                 SendNews(player);
-        }
-        else if (command == "REWARDS")
-        {
-            if (!Throttled(player, REQUEST_REWARDS))
-                SendRewards(player);
         }
         return false;
     }
@@ -325,7 +297,6 @@ public:
         Load();
         LoadNews();
         LoadHealingConsumables();
-        LoadRewards();
     }
 
     void OnUpdate(uint32 diff) override

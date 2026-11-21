@@ -1,7 +1,7 @@
 /*
  * mod-guild-levels: guild XP, levels and their storage.
  *
- * Guild XP and guild rep arrive from map threads (quests, boss kills, tabard kills), so all of the state below
+ * Guild XP arrives from map threads (quests, boss kills, tabard kills), so all of the state below
  * sits behind one mutex and the hooks only ever hold it briefly. Nothing is written to the database from a
  * hook: changed guilds and members are marked dirty and saved together every SaveInterval
  * seconds (and on shutdown). Level-ups are queued and announced from the world thread, where
@@ -50,22 +50,9 @@ namespace GuildLevels
             uint64 weekCash = 0;
         };
 
-        // A member's guild rep bookkeeping. The standing itself is the core's (character_reputation);
-        // this is which guild it belongs to and this week's rep for the weekly cap.
-        struct RepRow
-        {
-            uint32 guildId = 0;
-            uint32 week = 0;
-            uint32 weekRep = 0;
-            uint64 remainder = 0;   // guild XP not yet worth a point of rep; not saved
-        };
-
         std::mutex lock;
         std::unordered_map<uint32, GuildState> guilds;
         std::unordered_map<ObjectGuid::LowType, MemberRow> members;
-        std::unordered_map<ObjectGuid::LowType, RepRow> reps;
-        std::unordered_set<ObjectGuid::LowType> dirtyReps;
-        std::unordered_set<ObjectGuid::LowType> deletedReps;
         std::unordered_set<uint32> dirtyGuilds;
         std::unordered_set<ObjectGuid::LowType> dirtyMembers;
         std::unordered_set<uint32> deletedGuilds;
@@ -157,42 +144,35 @@ namespace GuildLevels
         c.dailyCapUntilLevel = uint8(std::min<uint32>(MAX_LEVEL, sConfigMgr->GetOption<uint32>("GuildLevels.XP.DailyCapUntilLevel", 20)));
         c.raidGuildMembers = std::max<uint32>(1, sConfigMgr->GetOption<uint32>("GuildLevels.XP.RaidGuildMembers", 10));
         c.botGuildsEarn = sConfigMgr->GetOption<bool>("GuildLevels.XP.BotGuildsEarn", false);
+        c.botsEarnWithGuildmate = sConfigMgr->GetOption<bool>("GuildLevels.XP.BotsEarnWithGuildmate", false);
         c.tabardKillXP = sConfigMgr->GetOption<uint32>("GuildLevels.XP.TabardKill", 10);
 
         auto pct = [](char const* key, uint32 def) { return std::min<uint32>(1000, sConfigMgr->GetOption<uint32>(key, def)); };
-        c.fastTrack1 = pct("GuildLevels.Perk.FastTrack1", 5);
-        c.fastTrack2 = pct("GuildLevels.Perk.FastTrack2", 10);
-        c.mountUp = pct("GuildLevels.Perk.MountUp", 10);
-        c.mrPopularity1 = pct("GuildLevels.Perk.MrPopularity1", 5);
-        c.mrPopularity2 = pct("GuildLevels.Perk.MrPopularity2", 10);
-        c.cashFlow1 = pct("GuildLevels.Perk.CashFlow1", 5);
-        c.cashFlow2 = pct("GuildLevels.Perk.CashFlow2", 10);
-        c.reinforce1 = std::min<uint32>(100, pct("GuildLevels.Perk.Reinforce1", 10));
-        c.reinforce2 = std::min<uint32>(100, pct("GuildLevels.Perk.Reinforce2", 20));
-        c.rideLikeTheWind = pct("GuildLevels.Perk.RideLikeTheWind", 25);
-        c.chugALug1 = pct("GuildLevels.Perk.ChugALug1", 50);
-        c.chugALug2 = pct("GuildLevels.Perk.ChugALug2", 100);
-        c.honorableMention1 = pct("GuildLevels.Perk.HonorableMention1", 5);
-        c.honorableMention2 = pct("GuildLevels.Perk.HonorableMention2", 10);
-        c.workingOvertime = std::min<uint32>(100, pct("GuildLevels.Perk.WorkingOvertime", 10));
-        c.quickAndDeadSpeed = pct("GuildLevels.Perk.QuickAndDeadSpeed", 100);
-        c.quickAndDeadRes = pct("GuildLevels.Perk.QuickAndDeadRes", 50);
-        c.doctorIsIn = pct("GuildLevels.Perk.DoctorIsIn", 50);
-        c.forGreatJusticeChance = std::min<uint32>(100, pct("GuildLevels.Perk.ForGreatJusticeChance", 10));
-        c.happyHourChance = std::min<uint32>(100, pct("GuildLevels.Perk.HappyHourChance", 50));
-        c.bountifulBagsChance = std::min<uint32>(100, pct("GuildLevels.Perk.BountifulBagsChance", 15));
-        c.bartering = std::min<uint32>(100, pct("GuildLevels.Perk.Bartering", 10));
+        c.goodStanding1 = pct("GuildLevels.Perk.GoodStanding1", 5);
+        c.goodStanding2 = pct("GuildLevels.Perk.GoodStanding2", 10);
+        c.haggler1 = std::min<uint32>(100, pct("GuildLevels.Perk.Haggler1", 5));
+        c.haggler2 = std::min<uint32>(100, pct("GuildLevels.Perk.Haggler2", 10));
+        c.battlefieldRenown1 = pct("GuildLevels.Perk.BattlefieldRenown1", 5);
+        c.battlefieldRenown2 = pct("GuildLevels.Perk.BattlefieldRenown2", 10);
+        c.swiftSteeds1 = pct("GuildLevels.Perk.SwiftSteeds1", 10);
+        c.swiftSteeds2 = pct("GuildLevels.Perk.SwiftSteeds2", 20);
+        c.loyalFollowing1 = pct("GuildLevels.Perk.LoyalFollowing1", 10);
+        c.loyalFollowing2 = pct("GuildLevels.Perk.LoyalFollowing2", 20);
+        c.guildTithe1 = pct("GuildLevels.Perk.GuildTithe1", 5);
+        c.guildTithe2 = pct("GuildLevels.Perk.GuildTithe2", 10);
+        c.fieldMedicine1 = pct("GuildLevels.Perk.FieldMedicine1", 25);
+        c.fieldMedicine2 = pct("GuildLevels.Perk.FieldMedicine2", 50);
+        c.reinforcedGear1 = std::min<uint32>(100, pct("GuildLevels.Perk.ReinforcedGear1", 10));
+        c.reinforcedGear2 = std::min<uint32>(100, pct("GuildLevels.Perk.ReinforcedGear2", 20));
+        c.bountifulHarvest1 = std::min<uint32>(100, pct("GuildLevels.Perk.BountifulHarvest1", 10));
+        c.bountifulHarvest2 = std::min<uint32>(100, pct("GuildLevels.Perk.BountifulHarvest2", 20));
+        c.secondWindSpeed = pct("GuildLevels.Perk.SecondWindSpeed", 100);
+        c.secondWindRes = pct("GuildLevels.Perk.SecondWindRes", 50);
+        c.lastingProvisions1 = pct("GuildLevels.Perk.LastingProvisions1", 50);
+        c.lastingProvisions2 = pct("GuildLevels.Perk.LastingProvisions2", 100);
+        c.alchemistsBountyChance = std::min<uint32>(100, pct("GuildLevels.Perk.AlchemistsBountyChance", 50));
         c.massResHealth = std::min<uint32>(100, pct("GuildLevels.Perk.MassResurrectionHealth", 35));
         c.massResMinutes = sConfigMgr->GetOption<uint32>("GuildLevels.Perk.MassResurrectionMinutes", 10);
-
-        c.repEnabled = sConfigMgr->GetOption<bool>("GuildLevels.Rep.Enable", true);
-        c.repFaction = sConfigMgr->GetOption<uint32>("GuildLevels.Rep.Faction", 1168);
-        c.repXPPerRep = std::max<uint32>(1, sConfigMgr->GetOption<uint32>("GuildLevels.Rep.XPPerRep", 36));
-        c.repWeeklyCap = sConfigMgr->GetOption<uint32>("GuildLevels.Rep.WeeklyCap", 4375);
-        c.repRealmRate = sConfigMgr->GetOption<bool>("GuildLevels.Rep.RealmRate", true);
-        c.repTabardBonus = pct("GuildLevels.Rep.TabardBonus", 10);
-        c.repTabardKill = sConfigMgr->GetOption<uint32>("GuildLevels.Rep.TabardKill", 1);
-        c.rewardsEnabled = sConfigMgr->GetOption<bool>("GuildLevels.Rewards.Enable", true);
         config = c;
     }
 
@@ -237,6 +217,15 @@ namespace GuildLevels
         return player && GetLevel(player->GetGuildId()) >= perkLevel;
     }
 
+    uint32 RankValue(uint8 guildLevel, uint8 level2, uint32 value2, uint8 level1, uint32 value1)
+    {
+        if (guildLevel >= level2)
+            return value2;
+        if (guildLevel >= level1)
+            return value1;
+        return 0;
+    }
+
     uint64 AddXP(uint32 guildId, uint64 xp, std::vector<ObjectGuid::LowType> const& contributors)
     {
         if (!config.enabled || !guildId || !xp)
@@ -246,6 +235,10 @@ namespace GuildLevels
         GuildState& state = guilds[guildId];
         if (state.level >= MAX_LEVEL)
             return 0;
+
+        // Loyal Following: the guild's own XP, not its members'.
+        if (uint32 pct = RankValue(state.level, PERK_LOYAL_FOLLOWING_2, config.loyalFollowing2, PERK_LOYAL_FOLLOWING_1, config.loyalFollowing1))
+            xp += xp * pct / 100;
 
         RollDay(state);
         if (uint64 cap = DailyCap(state.level))
@@ -355,105 +348,11 @@ namespace GuildLevels
         return out;
     }
 
-    uint32 GetRepGuild(ObjectGuid::LowType guid)
-    {
-        std::lock_guard<std::mutex> guard(lock);
-        auto itr = reps.find(guid);
-        return itr != reps.end() ? itr->second.guildId : 0;
-    }
-
-    void SetRepGuild(ObjectGuid::LowType guid, uint32 guildId)
-    {
-        std::lock_guard<std::mutex> guard(lock);
-        RepRow& row = reps[guid];
-        if (row.guildId == guildId)
-            return;
-        row.guildId = guildId;
-        row.remainder = 0;
-        dirtyReps.insert(guid);
-        deletedReps.erase(guid);
-    }
-
-    // The realm's Rate.Reputation.Gain, which the core only applies to rep it adds itself.
-    static float RepRate()
-    {
-        return config.repRealmRate ? std::max(0.0f, sWorld->getRate(RATE_REPUTATION_GAIN)) : 1.0f;
-    }
-
-    uint32 WeeklyRepCap()
-    {
-        return uint32(std::lround(double(config.repWeeklyCap) * RepRate()));
-    }
-
-    // Holds rep to the weekly cap and to Exalted. Under the lock.
-    static uint32 TakeFromWeek(ObjectGuid::LowType guid, RepRow& row, uint64 rep, uint32 roomToExalted)
-    {
-        if (config.repWeeklyCap)
-        {
-            uint32 cap = WeeklyRepCap();
-            rep = std::min<uint64>(rep, cap > row.weekRep ? cap - row.weekRep : 0);
-        }
-        rep = std::min<uint64>(rep, roomToExalted);
-        if (!rep)
-            return 0;
-
-        row.weekRep += uint32(rep);
-        dirtyReps.insert(guid);
-        deletedReps.erase(guid);
-        return uint32(rep);
-    }
-
-    static RepRow& ThisWeeksRow(ObjectGuid::LowType guid)
-    {
-        RepRow& row = reps[guid];
-        uint32 week = ThisWeek();
-        if (row.week != week)
-        {
-            row.week = week;
-            row.weekRep = 0;
-        }
-        return row;
-    }
-
-    uint32 TakeRep(ObjectGuid::LowType guid, uint64 guildXp, uint32 roomToExalted)
-    {
-        std::lock_guard<std::mutex> guard(lock);
-        RepRow& row = ThisWeeksRow(guid);
-
-        // The remainder is kept in rate-scaled guild XP, so 4x turns 9 guild XP into a point.
-        row.remainder += uint64(std::llround(double(guildXp) * RepRate()));
-        uint64 rep = row.remainder / config.repXPPerRep;
-        row.remainder %= config.repXPPerRep;
-        return TakeFromWeek(guid, row, rep, roomToExalted);
-    }
-
-    uint32 TakeFlatRep(ObjectGuid::LowType guid, uint32 rep, uint32 roomToExalted)
-    {
-        std::lock_guard<std::mutex> guard(lock);
-        return TakeFromWeek(guid, ThisWeeksRow(guid), rep, roomToExalted);
-    }
-
-    uint32 GetWeekRep(ObjectGuid::LowType guid)
-    {
-        std::lock_guard<std::mutex> guard(lock);
-        auto itr = reps.find(guid);
-        return itr != reps.end() && itr->second.week == ThisWeek() ? itr->second.weekRep : 0;
-    }
-
-    void ForgetRep(ObjectGuid::LowType guid)
-    {
-        std::lock_guard<std::mutex> guard(lock);
-        reps.erase(guid);
-        dirtyReps.erase(guid);
-        deletedReps.insert(guid);
-    }
-
     void Load()
     {
         std::lock_guard<std::mutex> guard(lock);
         guilds.clear();
         members.clear();
-        reps.clear();
 
         if (QueryResult result = CharacterDatabase.Query("SELECT guildid, level, xp, total_xp, day, day_xp, cash_week, cash_week_money, cash_total FROM mod_guild_levels"))
         {
@@ -495,19 +394,7 @@ namespace GuildLevels
             } while (result->NextRow());
         }
 
-        if (QueryResult result = CharacterDatabase.Query("SELECT guid, guildid, week, week_rep FROM mod_guild_levels_rep"))
-        {
-            do
-            {
-                Field* f = result->Fetch();
-                RepRow& row = reps[f[0].Get<uint32>()];
-                row.guildId = f[1].Get<uint32>();
-                row.week = f[2].Get<uint32>();
-                row.weekRep = f[3].Get<uint32>();
-            } while (result->NextRow());
-        }
-
-        LOG_INFO("module", "mod-guild-levels: {} guilds, {} members, {} guild rep rows loaded", guilds.size(), members.size(), reps.size());
+        LOG_INFO("module", "mod-guild-levels: {} guilds, {} members loaded", guilds.size(), members.size());
     }
 
     void Save(bool now)
@@ -548,27 +435,10 @@ namespace GuildLevels
                     guid, r.guildId, r.week, r.weekXp, r.totalXp, r.weekCash);
                 any = true;
             }
-            for (ObjectGuid::LowType guid : deletedReps)
-            {
-                trans->Append("DELETE FROM mod_guild_levels_rep WHERE guid = {}", guid);
-                any = true;
-            }
-            for (ObjectGuid::LowType guid : dirtyReps)
-            {
-                auto itr = reps.find(guid);
-                if (itr == reps.end())
-                    continue;
-                RepRow const& r = itr->second;
-                trans->Append("REPLACE INTO mod_guild_levels_rep (guid, guildid, week, week_rep) VALUES ({}, {}, {}, {})",
-                    guid, r.guildId, r.week, r.weekRep);
-                any = true;
-            }
             deletedGuilds.clear();
             deletedMembers.clear();
-            deletedReps.clear();
             dirtyGuilds.clear();
             dirtyMembers.clear();
-            dirtyReps.clear();
         }
         SaveNews(trans, any);
 

@@ -1,14 +1,11 @@
--- mod-guild-levels: the server-only perk auras, the spell scripts, and Mobile Banking's chest.
+-- mod-guild-levels: the server-only perk auras, the spell scripts, and Guild Vault's chest.
 --
--- 90450 Mount Up, 90451 The Quick and the Dead and 90455 For Great Justice are hidden passive
--- auras the client never sees (Attributes 0x40 passive + 0x80 hidden). The module sets their
--- amounts from the config:
+-- 90450 Swift Steeds and 90451 Second Wind are hidden passive auras the client never sees
+-- (Attributes 0x40 passive + 0x80 hidden). The module sets their amounts from the config:
 --   90450: Mod Mounted Speed Always (130) and Mod Mounted Flight Speed Always (209), stacking
 --          with other mount speed bonuses.
 --   90451: Mod Speed Always (129), the ghost's run speed.
---   90455: a Dummy aura (4) whose amount is the chance of one more boss coin; mod-boss-coins
---          reads it when BossCoins.BossKills.BonusAura = 90455.
--- The castable perks 90452-90454 are in mod_guild_levels_spells.sql, written by
+-- The castable perks 90452 and 90454 are in mod_guild_levels_spells.sql, written by
 -- tools/build_patch.py from the client rows so the two can't disagree.
 
 DELETE FROM `spell_dbc` WHERE `ID` IN (90450, 90451, 90455);
@@ -23,27 +20,21 @@ VALUES
     (90450, 192, 268435456, 1, 21, 1, -1,
      6, 1, 9, 1, 130,
      6, 1, 9, 1, 209,
-     1, 'Mount Up', 16712190, 1,
+     1, 'Swift Steeds', 16712190, 1,
      0, 0, 1, 1, 1, 1),
     (90451, 192, 268435456, 1, 21, 1, -1,
      6, 1, 99, 1, 129,
      0, 0, 0, 0, 0,
-     1, 'The Quick and the Dead', 16712190, 1,
-     0, 0, 1, 0, 1, 0),
-    (90455, 192, 268435456, 1, 21, 1, -1,
-     6, 1, 9, 1, 4,
-     0, 0, 0, 0, 0,
-     1, 'For Great Justice', 16712190, 1,
+     1, 'Second Wind', 16712190, 1,
      0, 0, 1, 0, 1, 0);
 
 -- The castable perks' scripts.
 DELETE FROM `spell_script_names` WHERE `spell_id` IN (90452, 90453, 90454);
 INSERT INTO `spell_script_names` (`spell_id`, `ScriptName`) VALUES
-    (90452, 'spell_guild_levels_mobile_banking'),
-    (90453, 'spell_guild_levels_have_group'),
+    (90452, 'spell_guild_levels_guild_vault'),
     (90454, 'spell_guild_levels_mass_resurrection');
 
--- Mobile Banking's guild chest: a guild bank (type 34) shaped like a chest (the Battered Chest's
+-- Guild Vault's guild chest: a guild bank (type 34) shaped like a chest (the Battered Chest's
 -- model). The summoning spell despawns it after 5 minutes.
 DELETE FROM `gameobject_template` WHERE `entry` = 9503400;
 INSERT INTO `gameobject_template` (`entry`, `type`, `displayId`, `name`, `IconName`, `castBarCaption`, `unk1`, `size`,

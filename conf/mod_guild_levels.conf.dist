@@ -61,13 +61,19 @@ GuildLevels.Announce = 1
 #                     level up.
 #        Default:     0
 #
+#    GuildLevels.XP.BotsEarnWithGuildmate
+#        Description: With GuildLevels.XP.BotGuildsEarn off: 1 lets a bot earn guild XP for its
+#                     quests and tabard kills while it is grouped with a real player of its own
+#                     guild, and credits the bots of a guild group for its bosses, so they show
+#                     in the guild's contribution list. Bot-only guilds still never earn. A boss's
+#                     guild XP is the same either way; it is only shared out among more members.
+#        Default:     0
+#
 #    GuildLevels.XP.TabardKill
-#        Description: Guild XP for each creature kill that rewards a living member wearing a
-#                     guild tabard: the stock Guild Tabard (5976) or the Renowned / Illustrious
-#                     Guild Tabard. A flat amount: no realm rate changes it, and it counts toward
-#                     the daily cap. Creatures gray to the member, critters, totems, pets and
-#                     creatures that give no XP pay nothing. GuildLevels.Rep.TabardKill is the rep
-#                     for the same kills. 0 = off.
+#        Description: Guild XP for each creature kill that rewards a living member wearing the
+#                     stock Guild Tabard (5976). A flat amount: no realm rate changes it, and it
+#                     counts toward the daily cap. Creatures gray to the member, critters, totems,
+#                     pets and creatures that give no XP pay nothing. 0 = off.
 #        Default:     10
 
 GuildLevels.XP.CurveScale = 0.0125
@@ -79,77 +85,70 @@ GuildLevels.XP.RaidGuildMembers = 10
 GuildLevels.XP.DailyCap = 150000
 GuildLevels.XP.DailyCapUntilLevel = 20
 GuildLevels.XP.BotGuildsEarn = 0
+GuildLevels.XP.BotsEarnWithGuildmate = 0
 GuildLevels.XP.TabardKill = 10
 
 #
 #    Perks. Percentages unless the name says otherwise; the guild level each one comes with is
-#    in brackets.
+#    in brackets. A perk with two ranks has a setting for each: rank 2 replaces rank 1 (the
+#    two don't add up).
 #
-#    GuildLevels.Perk.FastTrack1 / FastTrack2 (2 / 6)
-#        Description: More XP from kills and quests.                         Default: 5 / 10
-#    GuildLevels.Perk.MountUp (3)
-#        Description: Mounted and flying speed. Not in battlegrounds/arenas.  Default: 10
-#    GuildLevels.Perk.MrPopularity1 / MrPopularity2 (4 / 12)
+#    GuildLevels.Perk.GoodStanding1 / GoodStanding2 (2 / 12)
 #        Description: More reputation from kills and quests.                 Default: 5 / 10
-#    GuildLevels.Perk.CashFlow1 / CashFlow2 (5 / 16)
-#        Description: Extra share of looted money paid into the guild bank.  Default: 5 / 10
-#    GuildLevels.Perk.Reinforce1 / Reinforce2 (7 / 9)
-#        Description: Less durability lost by dying.                         Default: 10 / 20
-#    GuildLevels.Perk.RideLikeTheWind (8)
-#        Description: Faster flight paths. Needs the core's taxi speed hook. Default: 25
-#    GuildLevels.Perk.ChugALug1 / ChugALug2 (10 / 22)
-#        Description: Well Fed, flask and elixir buffs last longer.          Default: 50 / 100
-#    GuildLevels.Perk.HonorableMention1 / HonorableMention2 (13 / 19)
+#    GuildLevels.Perk.Haggler1 / Haggler2 (3 / 10)
+#        Description: Lower prices and repairs at vendors.                   Default: 5 / 10
+#    GuildLevels.Perk.BattlefieldRenown1 / BattlefieldRenown2 (4 / 14)
 #        Description: More honor from honorable kills.                       Default: 5 / 10
-#    GuildLevels.Perk.WorkingOvertime (14)
-#        Description: Higher chance of a crafting skill-up: a second roll
-#                     at this percent of the recipe's own chance.            Default: 10
-#    GuildLevels.Perk.QuickAndDeadSpeed / QuickAndDeadRes (15)
+#    GuildLevels.Perk.SwiftSteeds1 / SwiftSteeds2 (5 / 24)
+#        Description: Mounted and flying speed. Not in battlegrounds/arenas.  Default: 10 / 20
+#    GuildLevels.Perk.LoyalFollowing1 / LoyalFollowing2 (6 / 18)
+#        Description: More guild XP for the guild, from every source. Members'
+#                     own XP doesn't change. It counts toward the daily cap.  Default: 10 / 20
+#    GuildLevels.Perk.GuildTithe1 / GuildTithe2 (7 / 16)
+#        Description: Extra share of looted money paid into the guild bank.  Default: 5 / 10
+#    GuildLevels.Perk.FieldMedicine1 / FieldMedicine2 (8 / 21)
+#        Description: Healing potions and healthstones heal more.            Default: 25 / 50
+#    GuildLevels.Perk.ReinforcedGear1 / ReinforcedGear2 (9 / 17)
+#        Description: Less durability lost by dying.                         Default: 10 / 20
+#    Guild Vault (11) has no settings.
+#    GuildLevels.Perk.BountifulHarvest1 / BountifulHarvest2 (13 / 22)
+#        Description: Chance of an extra material from Mining, Herbalism,
+#                     Skinning and Disenchanting.                            Default: 10 / 20
+#    GuildLevels.Perk.SecondWindSpeed / SecondWindRes (15)
 #        Description: Ghost run speed, and health and mana when a guild
 #                     member of your group resurrects you.                   Default: 100 / 50
-#    GuildLevels.Perk.ForGreatJusticeChance (18)
-#        Description: Chance of one more boss coin per boss award. Paid by
-#                     mod-boss-coins with BossCoins.BossKills.BonusAura =
-#                     90455. 0 = off.                                         Default: 10
-#    GuildLevels.Perk.HappyHourChance (20)
+#    GuildLevels.Perk.LastingProvisions1 / LastingProvisions2 (19 / 23)
+#        Description: Well Fed, flask and elixir buffs last longer.          Default: 50 / 100
+#    GuildLevels.Perk.AlchemistsBountyChance (20)
 #        Description: Chance of an extra flask or elixir when you make one.  Default: 50
-#    GuildLevels.Perk.BountifulBagsChance (23)
-#        Description: Chance of an extra material from Mining, Herbalism,
-#                     Skinning and Disenchanting.                            Default: 15
-#    GuildLevels.Perk.Bartering (24)
-#        Description: Lower prices and repairs at vendors.                   Default: 10
 #    GuildLevels.Perk.MassResurrectionHealth / MassResurrectionMinutes (25)
 #        Description: Health and mana Mass Resurrection gives back, and how
 #                     often one player can be raised by it. The spell's
 #                     tooltip in the client patch says 35% and 10 min.      Default: 35 / 10
-#
-#    GuildLevels.Perk.DoctorIsIn (17)
-#        Description: Healing potions and healthstones heal more.            Default: 50
-#
-#    Mobile Banking (11) and Have Group, Will Travel (21) have no settings.
 
-GuildLevels.Perk.FastTrack1 = 5
-GuildLevels.Perk.FastTrack2 = 10
-GuildLevels.Perk.MountUp = 10
-GuildLevels.Perk.MrPopularity1 = 5
-GuildLevels.Perk.MrPopularity2 = 10
-GuildLevels.Perk.CashFlow1 = 5
-GuildLevels.Perk.CashFlow2 = 10
-GuildLevels.Perk.Reinforce1 = 10
-GuildLevels.Perk.Reinforce2 = 20
-GuildLevels.Perk.RideLikeTheWind = 25
-GuildLevels.Perk.ChugALug1 = 50
-GuildLevels.Perk.ChugALug2 = 100
-GuildLevels.Perk.HonorableMention1 = 5
-GuildLevels.Perk.HonorableMention2 = 10
-GuildLevels.Perk.WorkingOvertime = 10
-GuildLevels.Perk.QuickAndDeadSpeed = 100
-GuildLevels.Perk.QuickAndDeadRes = 50
-GuildLevels.Perk.DoctorIsIn = 50
-GuildLevels.Perk.ForGreatJusticeChance = 10
-GuildLevels.Perk.HappyHourChance = 50
-GuildLevels.Perk.BountifulBagsChance = 15
-GuildLevels.Perk.Bartering = 10
+GuildLevels.Perk.GoodStanding1 = 5
+GuildLevels.Perk.GoodStanding2 = 10
+GuildLevels.Perk.Haggler1 = 5
+GuildLevels.Perk.Haggler2 = 10
+GuildLevels.Perk.BattlefieldRenown1 = 5
+GuildLevels.Perk.BattlefieldRenown2 = 10
+GuildLevels.Perk.SwiftSteeds1 = 10
+GuildLevels.Perk.SwiftSteeds2 = 20
+GuildLevels.Perk.LoyalFollowing1 = 10
+GuildLevels.Perk.LoyalFollowing2 = 20
+GuildLevels.Perk.GuildTithe1 = 5
+GuildLevels.Perk.GuildTithe2 = 10
+GuildLevels.Perk.FieldMedicine1 = 25
+GuildLevels.Perk.FieldMedicine2 = 50
+GuildLevels.Perk.ReinforcedGear1 = 10
+GuildLevels.Perk.ReinforcedGear2 = 20
+GuildLevels.Perk.BountifulHarvest1 = 10
+GuildLevels.Perk.BountifulHarvest2 = 20
+GuildLevels.Perk.SecondWindSpeed = 100
+GuildLevels.Perk.SecondWindRes = 50
+GuildLevels.Perk.LastingProvisions1 = 50
+GuildLevels.Perk.LastingProvisions2 = 100
+GuildLevels.Perk.AlchemistsBountyChance = 50
 GuildLevels.Perk.MassResurrectionHealth = 35
 GuildLevels.Perk.MassResurrectionMinutes = 10
 
@@ -178,67 +177,3 @@ GuildLevels.News.Enable = 1
 GuildLevels.News.Keep = 100
 GuildLevels.News.ItemQuality = 4
 GuildLevels.News.Bots = 0
-
-########################################
-# Guild reputation
-########################################
-#
-#    GuildLevels.Rep.Enable
-#        Description: Members earn reputation with their guild from the guild XP they bring in
-#                     (quests, and bosses killed in a guild group). It is the faction
-#                     GuildLevels.Rep.Faction, which the client needs in its Faction.dbc
-#                     (tools/build_patch.py). It starts over when a member joins another guild.
-#        Default:     1
-#
-#    GuildLevels.Rep.Faction
-#        Description: The guild reputation's Faction.dbc id.
-#        Default:     1168
-#
-#    GuildLevels.Rep.XPPerRep
-#        Description: Guild XP a member brings in for each point of guild rep (Cataclysm: 360,
-#                     on its far larger guild XP). With the default XP settings a level 60 quest
-#                     or a dungeon boss is about 55 rep, a raid boss about 165.
-#        Default:     36
-#
-#    GuildLevels.Rep.WeeklyCap
-#        Description: Most guild rep a member can earn in a week, Tuesday to Monday
-#                     (Cataclysm 4.2: 4375), before GuildLevels.Rep.RealmRate. 0 = no cap.
-#        Default:     4375
-#
-#    GuildLevels.Rep.RealmRate
-#        Description: Multiply guild rep and the weekly cap by the realm's Rate.Reputation.Gain,
-#                     like other reputation (at 4: one point per 9 guild XP, 17500 a week).
-#        Default:     1
-#
-#    GuildLevels.Rep.TabardBonus
-#        Description: Percent more guild rep while wearing a guild tabard: the stock Guild
-#                     Tabard (5976) or the Renowned / Illustrious Guild Tabard. The weekly cap
-#                     stays the same, so it gets a member there sooner. 0 = off.
-#        Default:     10
-#
-#    GuildLevels.Rep.TabardKill
-#        Description: Guild rep for the kills GuildLevels.XP.TabardKill counts, whether or not the
-#                     guild is paid XP for them (level 25, daily cap). Real players only. A flat
-#                     amount: Rate.Reputation.Gain and GuildLevels.Rep.TabardBonus don't change it.
-#                     It counts toward the weekly cap. 0 = off.
-#        Default:     1
-
-GuildLevels.Rep.Enable = 1
-GuildLevels.Rep.Faction = 1168
-GuildLevels.Rep.XPPerRep = 36
-GuildLevels.Rep.WeeklyCap = 4375
-GuildLevels.Rep.RealmRate = 1
-GuildLevels.Rep.TabardBonus = 10
-GuildLevels.Rep.TabardKill = 1
-
-########################################
-# Guild vendors
-########################################
-#
-#    GuildLevels.Rewards.Enable
-#        Description: The guild vendors (one in each capital) sell the rewards in the world table
-#                     mod_guild_levels_reward, each for a guild level, a standing with the guild
-#                     and gold. Off: talking to a vendor opens nothing.
-#        Default:     1
-
-GuildLevels.Rewards.Enable = 1
