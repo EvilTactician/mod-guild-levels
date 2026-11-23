@@ -24,6 +24,14 @@ as a guild group and from kills made in a guild tabard, and climbs from level 1 
 from 2 to 25 unlocks a guild perk. The GuildLevels addon shows the guild's level, XP, perks, news
 and each member's contribution.
 
+## Screenshots
+<img width="1323" height="832" alt="image" src="https://github.com/user-attachments/assets/c3ad67e5-4b8b-4a28-86bf-8c965362b5b9" />
+<details>
+<summary><strong>See more screenshots (click to expand)</strong></summary>
+<img width="1323" height="833" alt="image" src="https://github.com/user-attachments/assets/8554258b-0cbe-44c4-b3ea-108d314684ed" />
+<img width="551" height="706" alt="image" src="https://github.com/user-attachments/assets/37181a1e-362f-4937-b641-9709307fa332" />
+</details>
+
 ## Guild XP
 
 | Source | Guild XP |
